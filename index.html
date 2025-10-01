@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jira Sprint Dashboard – Owner Swimlanes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PapaParse for CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- React + ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50">
+  <div id="root"></div>
+
+  <script type="text/babel">
+
+    const STATUS_ORDER = ["Delay", "To Do", "In Progress", "Done"];
+    const STATUS_COLOR = {
+      "Delay": "bg-amber-100 border-amber-300",
+      "To Do": "bg-gray-100 border-gray-300",
+      "In Progress": "bg-blue-100 border-blue-300",
+      "Done": "bg-green-100 border-green-300"
+    };
+
+    function App() {
+      const [rows, setRows] = React.useState([]);
+
+      function handleCSV(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (res) => {
+            setRows(res.data);
+          }
+        });
+      }
+
+      // Group rows by Owner
+      const grouped = {};
+      rows.forEach(r => {
+        const owner = r["Custom field (Owner - AUTOI)"] || "Unassigned";
+        if (!grouped[owner]) grouped[owner] = [];
+        grouped[owner].push(r);
+      });
+
+      return (
+        <div className="max-w-7xl mx-auto p-6">
+          <h1 className="text-2xl font-bold mb-4">Jira Sprint Dashboard – Owner Swimlanes</h1>
+
+          <label className="mb-6 inline-block">
+            <span className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer">
+              Upload Jira CSV
+            </span>
+            <input type="file" accept=".csv" className="hidden" onChange={handleCSV} />
+          </label>
+
+          {Object.keys(grouped).length === 0 && (
+            <p className="text-gray-500">Upload a Jira CSV to view the dashboard.</p>
+          )}
+
+          <div className="space-y-8">
+            {Object.entries(grouped).map(([owner, issues]) => (
+              <div key={owner} className="border rounded-lg shadow bg-white">
+                <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
+                  <h2 className="font-semibold">{owner}</h2>
+                  <span className="text-sm text-gray-500">{issues.length} issues</span>
+                </div>
+
+                <div className="grid md:grid-cols-4 gap-4 p-4">
+                  {STATUS_ORDER.map(status => {
+                    const filtered = issues.filter(i => (i["Status"] || "To Do") === status);
+                    return (
+                      <div key={status} className="border rounded bg-gray-50">
+                        <div className="px-2 py-1 text-xs font-semibold border-b bg-gray-100">{status}</div>
+                        <div className="p-2 space-y-2 max-h-72 overflow-auto">
+                          {filtered.length === 0 && (
+                            <div className="text-xs text-gray-400 italic">No items</div>
+                          )}
+                          {filtered.map(issue => (
+                            <div key={issue["Issue key"]} 
+                              className={`p-2 rounded border ${STATUS_COLOR[status]}`}>
+                              <div className="font-semibold text-sm">{issue["Issue key"]}</div>
+                              <div className="text-xs text-gray-700">{issue["Summary"]}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
