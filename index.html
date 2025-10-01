@@ -31,15 +31,32 @@
     function App() {
       const [rows, setRows] = React.useState([]);
 
+      // Load CSV if present in repo's root (served as static file on GitHub Pages)
+      React.useEffect(() => {
+        fetch("All items in the current sprint (One Firm Jira).csv")
+          .then(res => {
+            if (!res.ok) throw new Error("CSV not found");
+            return res.text();
+          })
+          .then(text => {
+            Papa.parse(text, {
+              header: true,
+              skipEmptyLines: true,
+              complete: (res) => setRows(res.data)
+            });
+          })
+          .catch(() => {
+            console.log("No auto CSV found, please upload manually.");
+          });
+      }, []);
+
       function handleCSV(e) {
         const file = e.target.files[0];
         if (!file) return;
         Papa.parse(file, {
           header: true,
           skipEmptyLines: true,
-          complete: (res) => {
-            setRows(res.data);
-          }
+          complete: (res) => setRows(res.data)
         });
       }
 
@@ -63,7 +80,7 @@
           </label>
 
           {Object.keys(grouped).length === 0 && (
-            <p className="text-gray-500">Upload a Jira CSV to view the dashboard.</p>
+            <p className="text-gray-500">No data loaded. Upload or place a CSV named <code>All items in the current sprint (One Firm Jira).csv</code> in the repo root.</p>
           )}
 
           <div className="space-y-8">
