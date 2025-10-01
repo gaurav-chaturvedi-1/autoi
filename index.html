@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Jira Sprint Dashboard – Owner Swimlanes</title>
+  <title>Jira Sprint Dashboard – Owner/Assignee Swimlanes</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Tailwind via CDN -->
@@ -31,7 +31,7 @@
     function App() {
       const [rows, setRows] = React.useState([]);
 
-      // Load CSV if present in repo's root (served as static file on GitHub Pages)
+      // Auto-load CSV if present
       React.useEffect(() => {
         fetch("All items in the current sprint (One Firm Jira).csv")
           .then(res => {
@@ -60,17 +60,20 @@
         });
       }
 
-      // Group rows by Owner
+      // Group rows by Owner (AUTOI), fallback to Assignee
       const grouped = {};
       rows.forEach(r => {
-        const owner = r["Custom field (Owner - AUTOI)"] || "Unassigned";
+        let owner = r["Custom field (Owner - AUTOI)"];
+        if (!owner || owner.trim() === "") {
+          owner = r["Assignee"] || "Unassigned";
+        }
         if (!grouped[owner]) grouped[owner] = [];
         grouped[owner].push(r);
       });
 
       return (
         <div className="max-w-7xl mx-auto p-6">
-          <h1 className="text-2xl font-bold mb-4">Jira Sprint Dashboard – Owner Swimlanes</h1>
+          <h1 className="text-2xl font-bold mb-4">Jira Sprint Dashboard – Swimlanes by Owner/Assignee</h1>
 
           <label className="mb-6 inline-block">
             <span className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer">
